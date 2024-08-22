@@ -18,6 +18,47 @@ func (m Diagonals[T]) DiagonalsIndexList() (indexes []int) {
 	return lintrans.Diagonals[T](m).DiagonalsIndexList()
 }
 
+// Lin trans without BSGS, switched order of CMult and Rot
+func (m Diagonals[T]) Evaluate_sw(vector []T, newVec func(size int) []T, add func(a, b, c []T), muladd func(a, b, c []T)) (res []T) {
+
+	slots := len(vector)
+
+	keys := utils.GetKeys(m)
+
+	//N1 := lintrans.FindBestBSGSRatio(keys, slots, 1)
+
+	//index, _, _ := lintrans.BSGSIndex(keys, slots, N1)
+
+	res = newVec(slots)
+
+	for i := range slots {
+
+		tmp := newVec(slots)
+
+		v, ok := m[j+i]
+		if !ok {
+			v = m[j+i-slots]
+		}
+
+
+		muladd(vector, utils.RotateSlice(v, -i), tmp)
+
+		for _, i := range index[j] {
+
+			v, ok := m[j+i]
+			if !ok {
+				v = m[j+i-slots]
+			}
+
+			muladd(utils.RotateSlice(vector, i), utils.RotateSlice(v, rot), tmp)
+		}
+
+		add(res, utils.RotateSlice(tmp, i), res)
+	}
+
+	return
+}
+
 // Evaluate evaluates the linear transformation on the provided vector.
 // add: c = a + b
 // muladd: c = c + a * b
