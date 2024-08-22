@@ -19,7 +19,7 @@ func (m Diagonals[T]) DiagonalsIndexList() (indexes []int) {
 }
 
 // Lin trans without BSGS, switched order of CMult and Rot
-func (m Diagonals[T]) Evaluate_sw(vector []T, newVec func(size int) []T, add func(a, b, c []T), muladd func(a, b, c []T)) (res []T) {
+func (m Diagonals[T]) Evaluatenew(vector []T, newVec func(size int) []T, add func(a, b, c []T), muladd func(a, b, c []T)) (res []T) {
 
 	slots := len(vector)
 
