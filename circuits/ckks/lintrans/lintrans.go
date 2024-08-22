@@ -35,23 +35,13 @@ func (m Diagonals[T]) Evaluatesw(vector []T, newVec func(size int) []T, add func
 
 		tmp := newVec(slots)
 
-		v, ok := m[j+i]
+		v, ok := m[i]
 		if !ok {
-			v = m[j+i-slots]
+			v = m[i-slots]
 		}
 
 
 		muladd(vector, utils.RotateSlice(v, -i), tmp)
-
-		for _, i := range index[j] {
-
-			v, ok := m[j+i]
-			if !ok {
-				v = m[j+i-slots]
-			}
-
-			muladd(utils.RotateSlice(vector, i), utils.RotateSlice(v, rot), tmp)
-		}
 
 		add(res, utils.RotateSlice(tmp, i), res)
 	}
