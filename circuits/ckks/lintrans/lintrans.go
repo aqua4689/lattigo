@@ -25,10 +25,6 @@ func (m Diagonals[T]) Evaluatesw(vector []T, newVec func(size int) []T, add func
 
 	keys := utils.GetKeys(m)
 
-	//N1 := lintrans.FindBestBSGSRatio(keys, slots, 1)
-
-	//index, _, _ := lintrans.BSGSIndex(keys, slots, N1)
-
 	res = newVec(slots)
 
 	for i := range slots {
