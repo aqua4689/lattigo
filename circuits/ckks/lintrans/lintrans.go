@@ -52,7 +52,7 @@ func (m Diagonals[T]) Evaluatesw(vector []T, newVec func(size int) []T, add func
 // Evaluate evaluates the linear transformation on the provided vector.
 // add: c = a + b
 // muladd: c = c + a * b
-func (m Diagonals[T]) Evaluate(vector []T, newVec func(size int) []T, add func(a, b, c []T), muladd func(a, b, c []T)) (res []T) {
+func (m Diagonals[T]) Evaluat(vector []T, newVec func(size int) []T, add func(a, b, c []T), muladd func(a, b, c []T)) (res []T) {
 
 	slots := len(vector)
 
