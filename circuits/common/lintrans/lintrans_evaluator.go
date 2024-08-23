@@ -123,6 +123,129 @@ func (eval Evaluator) EvaluateSequential(ctIn *rlwe.Ciphertext, linearTransforma
 	return
 }
 
+// our lin trans with switched order
+func (eval Evaluator) MultiplyByDiagMatrix_sw(ctIn *rlwe.Ciphertext, matrix LinearTransformation, BuffDecompQP []ringqp.Poly, opOut *rlwe.Ciphertext) (err error) {
+
+	BuffQP := eval.GetBuffQP()
+	BuffCt := eval.GetBuffCt()
+
+	*opOut.MetaData = *ctIn.MetaData
+	opOut.Scale = opOut.Scale.Mul(matrix.Scale)
+
+	params := eval.GetRLWEParameters()
+
+	levelQ := utils.Min(opOut.Level(), utils.Min(ctIn.Level(), matrix.LevelQ))
+	levelP := matrix.LevelP
+
+	ringQP := params.RingQP().AtLevel(levelQ, levelP)
+	ringQ := ringQP.RingQ
+	ringP := ringQP.RingP
+
+	opOut.Resize(opOut.Degree(), levelQ)
+
+	QiOverF := params.QiOverflowMargin(levelQ)
+	PiOverF := params.PiOverflowMargin(levelP)
+
+	c0OutQP := ringqp.Poly{Q: opOut.Value[0], P: BuffQP[5].Q}
+	c1OutQP := ringqp.Poly{Q: opOut.Value[1], P: BuffQP[5].P}
+
+	ct0TimesP := BuffQP[0].Q // ct0 * P mod Q
+	tmp0QP := BuffQP[1]
+	tmp1QP := BuffQP[2]
+
+	cQP := &rlwe.Element[ringqp.Poly]{}
+	cQP.Value = []ringqp.Poly{BuffQP[3], BuffQP[4]}
+	cQP.MetaData = &rlwe.MetaData{}
+	cQP.MetaData.IsNTT = true
+
+	BuffCt.Value[0].CopyLvl(levelQ, ctIn.Value[0])
+	BuffCt.Value[1].CopyLvl(levelQ, ctIn.Value[1])
+
+	ctInTmp0, ctInTmp1 := BuffCt.Value[0], BuffCt.Value[1]
+
+	ringQ.MulScalarBigint(ctInTmp0, ringP.ModulusAtLevel[levelP], ct0TimesP) // P*c0
+
+	slots := 1 << matrix.LogDimensions.Cols
+
+	keys := utils.GetSortedKeys(matrix.Vec)
+
+	var state bool
+	if keys[0] == 0 {
+		state = true
+		keys = keys[1:]
+	}
+
+	for i, k := range keys {
+
+		k &= (slots - 1)
+
+		galEl := params.GaloisElement(k)
+
+		var evk *rlwe.GaloisKey
+		var err error
+		if evk, err = eval.CheckAndGetGaloisKey(galEl); err != nil {
+			return fmt.Errorf("cannot MultiplyByDiagMatrix: Automorphism: CheckAndGetGaloisKey: %w", err)
+		}
+
+		if evk.LevelP() != levelP {
+			return fmt.Errorf("LinearTransformation.LevelP = %d != GaloiKey[%d].LevelP() = %d: ensure that the levelP of the linear transformation is the same as the levelP of the GaloisKeys", levelP, galEl, evk.LevelP())
+		}
+
+		index := eval.AutomorphismIndex(galEl)
+
+		if err = eval.GadgetProductHoistedLazy(levelQ, BuffDecompQP, &evk.GadgetCiphertext, cQP); err != nil {
+			return fmt.Errorf("eval.GadgetProductHoistedLazy: %w", err)
+		}
+
+		ringQ.Add(cQP.Value[0].Q, ct0TimesP, cQP.Value[0].Q)
+		ringQP.AutomorphismNTTWithIndex(cQP.Value[0], index, tmp0QP)  // Rot part
+		ringQP.AutomorphismNTTWithIndex(cQP.Value[1], index, tmp1QP)  // Rot part
+
+		pt := matrix.Vec[k] // this is the diagonal plaintext!!!
+
+		if i == 0 {
+			// keyswitch(c1_Q) = (d0_QP, d1_QP)
+			ringQP.MulCoeffsMontgomery(pt, tmp0QP, c0OutQP)  // CMult part
+			ringQP.MulCoeffsMontgomery(pt, tmp1QP, c1OutQP)  // CMult part
+		} else {
+			// keyswitch(c1_Q) = (d0_QP, d1_QP)
+			ringQP.MulCoeffsMontgomeryThenAdd(pt, tmp0QP, c0OutQP)  // CMult part
+			ringQP.MulCoeffsMontgomeryThenAdd(pt, tmp1QP, c1OutQP)  // CMult part
+		}
+
+		if i%QiOverF == QiOverF-1 {
+			ringQ.Reduce(c0OutQP.Q, c0OutQP.Q)
+			ringQ.Reduce(c1OutQP.Q, c1OutQP.Q)
+		}
+
+		if i%PiOverF == PiOverF-1 {
+			ringP.Reduce(c0OutQP.P, c0OutQP.P)
+			ringP.Reduce(c1OutQP.P, c1OutQP.P)
+		}
+	}
+
+	if len(keys)%QiOverF == 0 {
+		ringQ.Reduce(c0OutQP.Q, c0OutQP.Q)
+		ringQ.Reduce(c1OutQP.Q, c1OutQP.Q)
+	}
+
+	if len(keys)%PiOverF == 0 {
+		ringP.Reduce(c0OutQP.P, c0OutQP.P)
+		ringP.Reduce(c1OutQP.P, c1OutQP.P)
+	}
+
+	// single hoisted?
+	eval.ModDownQPtoQNTT(levelQ, levelP, c0OutQP.Q, c0OutQP.P, c0OutQP.Q) // sum(phi(c0 * P + d0_QP))/P
+	eval.ModDownQPtoQNTT(levelQ, levelP, c1OutQP.Q, c1OutQP.P, c1OutQP.Q) // sum(phi(d1_QP))/P
+
+	if state { // Rotation by zero
+		ringQ.MulCoeffsMontgomeryThenAdd(matrix.Vec[0].Q, ctInTmp0, c0OutQP.Q) // opOut += c0_Q * plaintext
+		ringQ.MulCoeffsMontgomeryThenAdd(matrix.Vec[0].Q, ctInTmp1, c1OutQP.Q) // opOut += c1_Q * plaintext
+	}
+
+	return
+}
+
 // MultiplyByDiagMatrix multiplies the Ciphertext "ctIn" by the plaintext matrix "matrix" and returns the result on the Ciphertext
 // "opOut". Memory buffers for the decomposed ciphertext BuffDecompQP, BuffDecompQP must be provided, those are list of poly of ringQ and ringP
 // respectively, each of size params.Beta().
@@ -238,6 +361,7 @@ func (eval Evaluator) MultiplyByDiagMatrix(ctIn *rlwe.Ciphertext, matrix LinearT
 		ringP.Reduce(c1OutQP.P, c1OutQP.P)
 	}
 
+	// single hoisted?
 	eval.ModDownQPtoQNTT(levelQ, levelP, c0OutQP.Q, c0OutQP.P, c0OutQP.Q) // sum(phi(c0 * P + d0_QP))/P
 	eval.ModDownQPtoQNTT(levelQ, levelP, c1OutQP.Q, c1OutQP.P, c1OutQP.Q) // sum(phi(d1_QP))/P
 
