@@ -198,8 +198,8 @@ func (eval Evaluator) MultiplyByDiagMatrix_sw(ctIn *rlwe.Ciphertext, matrix Line
 		}
 
 		ringQ.Add(cQP.Value[0].Q, ct0TimesP, cQP.Value[0].Q)
-		ringQP.AutomorphismNTTWithIndex(cQP.Value[0], index, tmp0QP)  // Rot part
-		ringQP.AutomorphismNTTWithIndex(cQP.Value[1], index, tmp1QP)  // Rot part
+		ringQP.AutomorphismNTTWithIndex(cQP.Value[0], index, tmp0QP)  // Rot part only permute
+		ringQP.AutomorphismNTTWithIndex(cQP.Value[1], index, tmp1QP)  // Rot part only permute
 
 		pt := matrix.Vec[k] // this is the diagonal plaintext!!!
 
