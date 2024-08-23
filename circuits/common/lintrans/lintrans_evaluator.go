@@ -205,7 +205,7 @@ func (eval Evaluator) MultiplyByDiagMatrix(ctIn *rlwe.Ciphertext, matrix LinearT
 		ringQP.AutomorphismNTTWithIndex(cQP.Value[0], index, tmp0QP)
 		ringQP.AutomorphismNTTWithIndex(cQP.Value[1], index, tmp1QP)
 
-		pt := matrix.Vec[k]
+		pt := matrix.Vec[k] // this is the diagonal plaintext!!!
 
 		if i == 0 {
 			// keyswitch(c1_Q) = (d0_QP, d1_QP)
