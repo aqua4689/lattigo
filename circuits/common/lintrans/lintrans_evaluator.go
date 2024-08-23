@@ -202,19 +202,19 @@ func (eval Evaluator) MultiplyByDiagMatrix(ctIn *rlwe.Ciphertext, matrix LinearT
 		}
 
 		ringQ.Add(cQP.Value[0].Q, ct0TimesP, cQP.Value[0].Q)
-		ringQP.AutomorphismNTTWithIndex(cQP.Value[0], index, tmp0QP)
-		ringQP.AutomorphismNTTWithIndex(cQP.Value[1], index, tmp1QP)
+		ringQP.AutomorphismNTTWithIndex(cQP.Value[0], index, tmp0QP)  // Rot part
+		ringQP.AutomorphismNTTWithIndex(cQP.Value[1], index, tmp1QP)  // Rot part
 
 		pt := matrix.Vec[k] // this is the diagonal plaintext!!!
 
 		if i == 0 {
 			// keyswitch(c1_Q) = (d0_QP, d1_QP)
-			ringQP.MulCoeffsMontgomery(pt, tmp0QP, c0OutQP)
-			ringQP.MulCoeffsMontgomery(pt, tmp1QP, c1OutQP)
+			ringQP.MulCoeffsMontgomery(pt, tmp0QP, c0OutQP)  // CMult part
+			ringQP.MulCoeffsMontgomery(pt, tmp1QP, c1OutQP)  // CMult part
 		} else {
 			// keyswitch(c1_Q) = (d0_QP, d1_QP)
-			ringQP.MulCoeffsMontgomeryThenAdd(pt, tmp0QP, c0OutQP)
-			ringQP.MulCoeffsMontgomeryThenAdd(pt, tmp1QP, c1OutQP)
+			ringQP.MulCoeffsMontgomeryThenAdd(pt, tmp0QP, c0OutQP)  // CMult part
+			ringQP.MulCoeffsMontgomeryThenAdd(pt, tmp1QP, c1OutQP)  // CMult part
 		}
 
 		if i%QiOverF == QiOverF-1 {
