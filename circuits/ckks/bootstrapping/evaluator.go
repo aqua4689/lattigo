@@ -638,6 +638,7 @@ func (eval Evaluator) ModUp(ctIn *rlwe.Ciphertext) (ctOut *rlwe.Ciphertext, err 
 	ringQ := params.RingQ().AtLevel(ctIn.Level())
 	ringP := params.RingP()
 
+	// Mod Raise needs coeff-form, so we are switching to it
 	for i := range ctIn.Value {
 		ringQ.INTT(ctIn.Value[i], ctIn.Value[i])
 	}
@@ -670,6 +671,7 @@ func (eval Evaluator) ModUp(ctIn *rlwe.Ciphertext) (ctOut *rlwe.Ciphertext, err 
 			pos, neg = 0, 1
 		}
 
+		// Extending RNS representation one by one
 		for i := 1; i < levelQ+1; i++ {
 			tmp = ring.BRedAdd(coeff, Q[i], BRCQ[i])
 			ctIn.Value[0].Coeffs[i][j] = tmp*pos + (Q[i]-tmp)*neg
