@@ -123,7 +123,7 @@ func (eval Evaluator) EvaluateSequential(ctIn *rlwe.Ciphertext, linearTransforma
 	return
 }
 
-// our lin trans with switched order
+// our lin trans with switched order and it includes Rescale!!!
 func (eval Evaluator) MultiplyByDiagMatrix_sw(ctIn *rlwe.Ciphertext, matrix LinearTransformation, BuffDecompQP []ringqp.Poly, opOut *rlwe.Ciphertext) (err error) {
 
 	BuffQP := eval.GetBuffQP()
