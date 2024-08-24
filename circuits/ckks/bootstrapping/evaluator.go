@@ -672,6 +672,8 @@ func (eval Evaluator) ModUp(ctIn *rlwe.Ciphertext) (ctOut *rlwe.Ciphertext, err 
 		}
 
 		// Extending RNS representation one by one
+		// BRedAdd is just coeff mod Q[i]
+		// in ours we have to increase the levelQ 1 bigger
 		for i := 1; i < levelQ+1; i++ {
 			tmp = ring.BRedAdd(coeff, Q[i], BRCQ[i])
 			ctIn.Value[0].Coeffs[i][j] = tmp*pos + (Q[i]-tmp)*neg
