@@ -666,6 +666,7 @@ func (eval Evaluator) Mul(op0 *rlwe.Ciphertext, op1 rlwe.Operand, opOut *rlwe.Ci
 
 			// If DefaultScalingFactor > 2^60, then multiple moduli are used per single rescale
 			// thus continues multiplying the scale with the appropriate number of moduli
+			// Rescale part !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 			for i := 1; i < eval.GetParameters().LevelsConsumedPerRescaling(); i++ {
 				scale = scale.Mul(rlwe.NewScale(ringQ.SubRings[level-i].Modulus))
 			}
