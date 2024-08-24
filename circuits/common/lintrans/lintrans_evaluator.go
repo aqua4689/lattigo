@@ -193,6 +193,7 @@ func (eval Evaluator) MultiplyByDiagMatrix_sw(ctIn *rlwe.Ciphertext, matrix Line
 
 		index := eval.AutomorphismIndex(galEl)
 
+		// key switching
 		if err = eval.GadgetProductHoistedLazy(levelQ, BuffDecompQP, &evk.GadgetCiphertext, cQP); err != nil {
 			return fmt.Errorf("eval.GadgetProductHoistedLazy: %w", err)
 		}
