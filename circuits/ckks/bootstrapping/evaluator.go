@@ -568,6 +568,50 @@ func (eval Evaluator) bootstrap(ctIn *rlwe.Ciphertext) (ctOut *rlwe.Ciphertext, 
 	return
 }
 
+func (eval Evaluator) bootstrap_EvalRound(ctIn *rlwe.Ciphertext) (ctOut *rlwe.Ciphertext, errScale *rlwe.Scale, err error) {
+
+	// Step 1: scale to q/|m|
+	if ctOut, errScale, err = eval.ScaleDown(ctIn); err != nil {
+		return
+	}
+
+	// Step 2 : Extend the basis from q to Q
+	if ctOut, err = eval.ModUp(ctOut); err != nil {
+		return
+	}
+
+	// Step 3 : CoeffsToSlots (Homomorphic encoding)
+	// ctReal = Ecd(real)
+	// ctImag = Ecd(imag)
+	// If n < N/2 then ctReal = Ecd(real||imag)
+	var ctReal, ctImag *rlwe.Ciphertext
+	if ctReal, ctImag, err = eval.CoeffsToSlots(ctOut); err != nil {
+		return
+	}
+
+	// Step 4 : EvalRound
+	if ctReal, err = sub ctReal - eval.EvalMod(ctReal); err != nil {
+		return
+	}
+
+	// Step 4 : EvalRound
+	if ctImag != nil {
+		if ctImag, err = sub ctImag - eval.EvalMod(ctImag); err != nil {
+			return
+		}
+	}
+
+	// Step 5 : SlotsToCoeffs (Homomorphic decoding)
+	var ctRound *rlwe.Ciphertext
+	if ctRound, err = eval.SlotsToCoeffs(ctReal, ctImag); err != nil {
+		return
+	}
+
+	sub ctOut ctRound
+	
+	return
+}
+
 // ScaleDown brings the ciphertext level to zero and scaling factor to Q[0]/MessageRatio
 // It multiplies the ciphertexts by round(currentMessageRatio / targetMessageRatio) where:
 // - currentMessageRatio = Q/ctIn.Scale
