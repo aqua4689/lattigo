@@ -589,14 +589,22 @@ func (eval Evaluator) bootstrap_EvalRound(ctIn *rlwe.Ciphertext) (ctOut *rlwe.Ci
 		return
 	}
 
+	var ctReal_Mod, ctImag_Mod *rlwe.Ciphertext
+
 	// Step 4 : EvalRound
-	if ctReal, err = sub ctReal - eval.EvalMod(ctReal); err != nil {
+	if ctReal_Mod, err = eval.EvalMod(ctReal); err != nil {
+		return
+	}
+	if err = eval.Evaluator.Sub(ctReal, ctReal_Mod, ctReal); err != nil {
 		return
 	}
 
 	// Step 4 : EvalRound
 	if ctImag != nil {
-		if ctImag, err = sub ctImag - eval.EvalMod(ctImag); err != nil {
+		if ctImag_Mod, err = eval.EvalMod(ctImag); err != nil {
+			return
+		}
+		if err = eval.Evaluator.Sub(ctImag, ctImag_Mod, ctImag); err != nil {
 			return
 		}
 	}
@@ -607,7 +615,9 @@ func (eval Evaluator) bootstrap_EvalRound(ctIn *rlwe.Ciphertext) (ctOut *rlwe.Ci
 		return
 	}
 
-	sub ctOut ctRound
+	if err = eval.Evaluator.Sub(ctOut, ctRound, ctOut); err != nil {
+		return
+	}
 	
 	return
 }
